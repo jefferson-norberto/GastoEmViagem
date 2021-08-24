@@ -4,13 +4,23 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.NumberFormatException
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
+    private lateinit var viewModel: MainViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+
+        viewModel.textViewResult.observe(this, Observer {
+            textViewResult.text = it
+        })
 
         buttonCalculate.setOnClickListener(this)
     }
@@ -21,43 +31,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         //verificando qual botão foi clicado
         if(id == R.id.buttonCalculate){
-            calculate()
-        }
-    }
+            //pegando os valores da interface
+            val distance = editTextDistance.text.toString()
+            val price = editTextPrice.text.toString()
+            val autonomy = editTextAutonomy.text.toString()
 
-    //função para realizar o calculo do preço da viagem
-    private fun calculate(){
-        //para validar as entradas foi criado uma função
-        if(validationOk()) {
-            //usa-se o try catch para validar por erros
-            try {
-                //recuperando os valores digitados na interface dos editstext
-                val distance = editTextDistance.text.toString().toFloat()
-                val price = editTextPrice.text.toString().toFloat()
-                val autonomy = editTextAutonomy.text.toString().toFloat()
-
-                //realizando o calculo total
-                val totalValue = (distance * price) / autonomy
-
-                //formantando a string com 2 casas decimais e setando na interface
-                textViewResult.text = "R$ ${"%.2f".format(totalValue)}"
-
-                // como estou tratando erro de um npumero específico uso o NumberFormatException
-            }catch (nfe: NumberFormatException){
-                Toast.makeText(this, getString(R.string.informeValorValido), Toast.LENGTH_LONG).show()
+            //usando a viewModel
+            if(viewModel.validation(distance, price, autonomy)){
+                viewModel.calculate(distance.toFloat(), price.toFloat(), autonomy.toFloat())
+            }else{
+                Toast.makeText(this, getString(R.string.preenchaOsCampos), Toast.LENGTH_LONG).show()
             }
-        }else {
-            //aqui this é o mesmo que applicationContext
-            Toast.makeText(this, getString(R.string.preenchaOsCampos), Toast.LENGTH_LONG).show()
+
         }
     }
 
-    //função usada para verificar se os campos são diferentes de vazio
-    private fun validationOk(): Boolean {
-        //Não preciso usar if neste caso pois essa verificação em kotlin já retorna true ou false
-        return (editTextAutonomy.text.toString() != "" &&
-                editTextAutonomy.text.toString() != "0" &&
-                editTextDistance.text.toString() != "" &&
-                editTextPrice.text.toString() != "")
-    }
+
 }
